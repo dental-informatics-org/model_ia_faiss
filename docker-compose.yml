@@ -1,0 +1,47 @@
+services:
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+
+  app:
+    build: .
+    restart: always
+    depends_on:
+      - redis
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/venv
+      - ./data:/app/data
+      - ./models:/root/.cache/huggingface/hub
+    runtime: nvidia  # <-- Adicionado
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  worker:
+    build: .
+    container_name: worker
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - CUDA_VISIBLE_DEVICES=0
+    command: ["rq", "worker", "--with-scheduler"]
+    volumes:
+      - ./data:/app/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

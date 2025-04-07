@@ -1,0 +1,15 @@
+faiss-gpu-cu12
+torch
+transformers
+numpy
+hf_xet
+redis
+uvicorn
+fastapi
+frontend
+tools
+python-multipart
+motor
+dotenv
+rq
+pymupdf
