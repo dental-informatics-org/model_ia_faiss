@@ -1,3 +1,4 @@
+from redis import Redis
 import torch.multiprocessing as mp
 import os
 import torch
@@ -5,6 +6,8 @@ from transformers import AutoTokenizer, AutoModel
 import faiss
 import numpy as np
 import pickle
+
+redis_conn = Redis(host="localhost", port=6379)
 
 # 🔹 Configuração única do start method (antes de qualquer importação que use multiprocessing)
 try:
@@ -107,6 +110,13 @@ def indexar_textos(linhas):
 
 def buscar_textos(consulta, top_k=5):
     """Busca textos similares a uma consulta."""
+    global index, id_para_texto
+
+    if redis_conn.get("recarregar_indice") == b"true":
+        index = carregar_indice()
+        carregar_id_para_texto()
+        redis_conn.set("recarregar_indice", "false")
+
     embedding = gerar_embeddings(consulta)
     faiss.normalize_L2(embedding)
     distancias, indices = index.search(embedding, top_k)

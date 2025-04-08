@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List
 from service.embeddings_and_index.embeddings_and_index import buscar_textos
 
 router = APIRouter(prefix="/search-index", tags=["Search Index"])

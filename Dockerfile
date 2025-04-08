@@ -9,7 +9,6 @@ RUN pip3 install --no-cache-dir -r requeriments.txt
 COPY . .
 
 ENV PYTHONPATH=/app
-ENV CUDA_VISIBLE_DEVICES=0
 
 # Executar o script de entrada
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -178,5 +178,9 @@ data/
 
 # Model checkpoints
 checkpoints/
+
 # Model
 models/
+
+# DB
+mongo-data/

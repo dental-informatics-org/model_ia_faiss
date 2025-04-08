@@ -3,7 +3,7 @@ from fastapi.responses import Response
 from routers import process_file, search_index, tasks_route
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from db import mongo
+from db import mongo_fastapi
 from service.create_index import verificar_e_criar_indices
 
 
@@ -12,7 +12,7 @@ async def lifespan(app: FastAPI):
     # Verifica se a conexão está funcionando
     try:
         # Verifica a conexão com o MongoDB
-        #await mongo.db.command("ping")
+        await mongo_fastapi.db.command("ping")
         verificar_e_criar_indices()
         yield  # Isso garante que a aplicação continue rodando após a verificação
     except Exception as e:

@@ -1,26 +1,39 @@
-from fastapi import UploadFile
 from typing import List
+
+from fastapi import UploadFile
 from service.extraction_and_cleaning.transform_pdf_in_txt import extrair_texto_pdf
 from service.worker import process_pdf_task
-from util.generate_string import generate_unique_filename, get_file_hash
+from util.generate_string import generate_unique_filename
 from redis import Redis
 from rq import Queue
+from pathlib import Path
+import shutil
 
-redis_conn = Redis(host="redis", port=6379)
+redis_conn = Redis(host="localhost", port=6379)
 fila = Queue(connection=redis_conn)
 
 async def process_pdf(files: List[UploadFile]):
-    files_data = []
+    saved_files = []
+
     for file in files:
-        file_hash = await get_file_hash(file)
-        file_name_unique = generate_unique_filename()
-        text = await extrair_texto_pdf(file, file_name_unique)
+        try:
+            file_name_unique = generate_unique_filename()
+            filename_hash = f"{file_name_unique}.{file.content_type.split('/')[1]}"
 
-        files_data.append({
-            "hash": file_hash,
-            "filename": file_name_unique,
-            "text": text
-        })
-    job = fila.enqueue(process_pdf_task, files_data)
+            save_path = Path(f"data/files/{filename_hash}")
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            with open(save_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            
+            saved_files.append({
+                "file_path": str(save_path),
+                "file_name_unique": filename_hash,
+                "original_name": file.filename,
+                "content_type": file.content_type,
+            })
 
-    return {"job_id": job.get_id()}
+            job = fila.enqueue(process_pdf_task, saved_files, job_timeout=-1)
+            return {"job_id": job.get_id()}
+        except Exception as e:
+                return {"Falha ao processar arquivos": {str(e)}}
