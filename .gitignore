@@ -174,7 +174,7 @@ cython_debug/
 .pypirc
 
 # Datasets
-data/
+# data/
 
 # Model checkpoints
 checkpoints/

@@ -14,6 +14,7 @@ fila = Queue(connection=redis_conn)
 
 async def process_pdf(files: List[UploadFile]):
     saved_files = []
+    print(f"Processando {len(files)} arquivos...")
 
     for file in files:
         try:
@@ -33,7 +34,8 @@ async def process_pdf(files: List[UploadFile]):
                 "content_type": file.content_type,
             })
 
-            job = fila.enqueue(process_pdf_task, saved_files, job_timeout=-1)
-            return {"job_id": job.get_id()}
         except Exception as e:
                 return {"Falha ao processar arquivos": {str(e)}}
+
+    job = fila.enqueue(process_pdf_task, saved_files, job_timeout=-1)
+    return {"job_id": job.get_id()}

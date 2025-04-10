@@ -1,0 +1,122 @@
+Você está num ponto crucial do projeto, onde a qualidade da **recuperação do contexto** afeta diretamente a capacidade da LLM em dar boas respostas. Vamos analisar o que está acontecendo e te mostrar as melhores estratégias para resolver isso – tanto no **presente**, com dados já existentes, quanto no **futuro**, com melhorias estruturais e até de modelo.
+
+---
+
+## 🧠 Problema atual
+
+Sua busca está trazendo **trechos irrelevantes**, mesmo que semanticamente parecidos em termos de palavras ("dente", "fratura", "vista"). Isso é sinal de que:
+
+1. ❌ **Seu banco vetorial** não está representando bem o significado clínico real do conteúdo.
+2. 🤖 A **formatação e divisão dos textos** está comprometendo a semântica dos embeddings.
+3. ⚙️ O **modelo de embedding** pode não estar otimizado para linguagem técnica odontológica.
+
+---
+
+## ✅ Soluções possíveis
+
+Vamos dividir em **3 frentes** principais:
+
+---
+
+### 🔧 1. **Melhoria na segmentação e pré-processamento do texto**
+  
+**Você já começou isso**, mas para seu caso, a segmentação precisa ser mais **semântica** do que apenas baseada em quebras de linha.
+
+**Sugestão:**
+- Separe os textos em **parágrafos completos** (mínimo de 4 ou 5 frases com ponto final).
+- Use um modelo de linguagem (ex: GPT-4 ou LLaMA-3 localmente) para reescrever os trechos como **blocos informativos**, por exemplo:
+
+  ```json
+  {
+    "contexto": "O desgaste gengival ocorre quando há retração da gengiva, expondo a raiz do dente. Em casos com cárie associada, o tratamento pode incluir restaurações, aplicação de flúor e remoção da cárie com material restaurador adequado.",
+    "fonte": "Livro X - Capítulo 3"
+  }
+  ```
+
+- Se o conteúdo original estiver muito "foto + legenda", remova ou junte com o texto explicativo mais próximo (ex: "Figura 3: gengiva retraída" → combine com explicação próxima).
+
+---
+
+### 🧬 2. **Melhoria nos embeddings e busca vetorial**
+
+Seu modelo atual (talvez `all-MiniLM`, `text-embedding-ada`, etc.) pode estar entendendo “cracks” e “fractures” como relevantes para “cárie”, mas isso não é verdade clinicamente.
+
+**Soluções:**
+
+#### a. Use embeddings clínicos especializados
+- [BioSentVec](https://github.com/ncbi-nlp/BioSentVec)
+- [ClinicalBERT](https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT)
+- [SapBERT](https://huggingface.co/cambridgeltl/SapBERT-from-PubMedBERT-fulltext)
+
+Esses modelos foram treinados com vocabulário biomédico/odontológico e são melhores para encontrar relações como "gengivite", "recessão gengival", "cárie proximal", etc.
+
+#### b. Melhore sua busca com RRF (Reciprocal Rank Fusion) ou rerankers
+- Use **rerankers** como o `cross-encoder/ms-marco-MiniLM-L6-en-de-v1` para reordenar os resultados mais relevantes.
+- Integre FAISS + reranker: FAISS te dá 50 candidatos → reranker reordena e filtra com base na **relevância real** da pergunta.
+
+---
+
+### 🎓 3. **Ajuste fino ou instrução de LLM**
+
+Você **não precisa treinar um LLM do zero** para isso (é muito caro), mas pode **fazer fine-tuning leve** ou **instruir** um LLM com conteúdo odontológico.
+
+#### a. Use RAG com contexto bem estruturado
+Você já faz isso, mas a chave aqui é:
+- Melhorar **a qualidade do que entra no prompt** (melhor chunk + busca + estrutura).
+- Se você der **um bom parágrafo explicativo**, até uma LLM genérica como o Mistral ou LLaMA responde muito bem.
+
+#### b. Ajuste fino leve (opcional mais avançado)
+- Treine um modelo como LLaMA, Mistral, Phi-2 ou TinyLlama com seus próprios pares de:
+  
+  **Input:** "Paciente apresenta retração gengival com cárie na região cervical. O que fazer?"  
+  **Output:** "O ideal é realizar a remoção da cárie, avaliar a profundidade do comprometimento gengival e considerar restauração com ionômero de vidro. Aplicações de flúor também são indicadas."
+
+- Isso pode ser feito com **LoRA** e dados em formato **instruct-tuning**.
+
+---
+
+## 📚 Fontes e livros recomendados para alimentar sua base
+
+Para ter conteúdo clínico confiável:
+
+- **Endodontia**:
+  - *Endodontics: Principles and Practice* (Torabinejad)
+  - *Pathways of the Pulp* (Cohen & Hargreaves)
+- **Periodontia**:
+  - *Carranza's Clinical Periodontology*
+- **Odontologia geral**:
+  - *Fundamentos de Odontologia – Diagnóstico Clínico*
+  - *Manual de Diagnóstico Oral e Medicina Bucal – Neville*
+- **Imagens**:
+  - *Atlas de Radiologia Odontológica* – para incluir imagens e descritivos com contexto
+
+Você pode extrair esses livros e gerar **blocos de conhecimento**, tipo:
+
+```json
+{
+  "tema": "Cárie em molar",
+  "explicacao": "A cárie em dentes molares pode se desenvolver nas fissuras e nas superfícies interproximais...",
+  "tratamento": "Remoção da cárie, avaliação radiográfica, restauração com resina composta ou amálgama...",
+  "palavras-chave": ["cárie", "molar", "tratamento", "odontologia restauradora"]
+}
+```
+
+---
+
+## 📌 Conclusão e Caminho Recomendado
+
+| Etapa | O que fazer | Ferramenta recomendada |
+|-------|-------------|-------------------------|
+| ✅ Pré-processamento | Melhorar divisão semântica e remover lixo | Sua função atual + reestruturação |
+| 🚀 Embeddings | Trocar por modelos biomédicos + rerank | ClinicalBERT + Cross-Encoder |
+| 🧠 LLM | Usar RAG com contexto claro | Mistral, LLaMA ou OpenChat |
+| 📚 Dados | Basear em livros técnicos reais | Cohen, Carranza, Neville |
+
+---
+
+Se quiser, posso te ajudar a:
+- Integrar o ClinicalBERT ou SapBERT.
+- Criar um pipeline de extração dos livros para gerar os blocos de conhecimento.
+- Fazer uma reindexação de todo o conteúdo com estrutura adequada.
+
+Quer seguir por uma dessas frentes agora?
