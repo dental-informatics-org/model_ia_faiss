@@ -128,3 +128,23 @@ Este projeto está licenciado sob a MIT License - veja o arquivo [LICENSE](LICEN
 
 Esse `README.md` cobre a descrição do projeto, suas funcionalidades, instalação, configuração e execução, além de fornecer detalhes sobre os conceitos de **índice** e **embeddings**. Você pode personalizar conforme necessário para melhor adequar-se às necessidades do seu projeto.
 ```
+
+
+We have already created a CR for Portal C1382851.
+
+We need the below details to update the CR.
+
+Implementation Plan – Details about the deployment like what are all the JIRA IDs that are going live
+Backout Plan – If something goes wrong, what is the plan for rollback.
+PR details – Any PR link, Merged from QA to Prod.
+Qtest Results – Qtest results link which will have the test case results.
+
+
+
+Along with other items, I would like you to cover below points as well :
+
+Check if you have required accesses for the deployment
+Show Luis what code you will be deploying, how coder merge etc. will be done
+What is required from Jira story perspective qtest and tagging etc.
+How to smoke test in PROD?
+How to make sure the deployment is successful
