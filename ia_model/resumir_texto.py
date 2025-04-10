@@ -2,26 +2,30 @@ import os
 import json
 import subprocess
 from time import time
+import requests
 from transformers import AutoTokenizer
 
 RAW_DIR = 'data/json/raw'
 CLEAN_DIR = 'data/json/clean'
-MODEL = 'mistral'
+MODEL = 'gemma-3-12b-it'
 TOKEN_LIMIT = 4000
+API_URL='http://127.0.0.1:1234/v1/chat/completions'
 
 os.makedirs(CLEAN_DIR, exist_ok=True)
 
 PROMPT_INICIAL = (
-    "Você é um assistente que limpa, organiza e extrai conhecimento útil de textos médicos e odontológicos.\n"
-    "Seu trabalho é:\n"
-    "- Remover autores, datas, referências bibliográficas e títulos de artigos.\n"
-    "- Eliminar duplicações e repetições de frases.\n"
-    "- Ignorar sumários, listas de artigos, nomes de revistas, números de páginas e citações.\n"
-    "- Focar apenas em explicações claras, organizadas por tema (ex: cicatrização, implantes, etc).\n"
-    "- Não numerar os parágrafos.\n"
-    "- Não retorne nada se o conteúdo for apenas referência ou citação.\n\n"
-    "Texto:\n"
+"Você é um assistente que limpa, organiza e extrai conhecimento útil de textos médicos e odontológicos.\n"
+"Seu trabalho é:\n"
+"- Remover autores, datas, referências bibliográficas e títulos de artigos.\n"
+"- Eliminar duplicações e repetições de frases.\n"
+"- Ignorar sumários, listas de artigos, nomes de revistas, números de páginas e citações.\n"
+"- Focar apenas em explicações claras e organizadas por tema (ex: cicatrização, implantes, etc).\n"
+"- Não numerar os parágrafos nem dividir em múltiplas linhas ou itens de listas.\n"
+"- Organize a resposta de forma contínua, sem quebra de linhas ou listas, em um único bloco de texto.\n"
+"- Caso não tenha informações relevantes, responda apenas com um ponto.\n\n"
+"Texto:\n"
 )
+
 # Tokenizer
 tokenizer = AutoTokenizer.from_pretrained("NousResearch/Llama-2-7b-chat-hf")
 
@@ -53,16 +57,24 @@ def limpar_resposta(resposta):
     return parágrafos_limpos
 
 def processar_bloco(texto):
-    prompt = PROMPT_INICIAL + texto
-    result = subprocess.run(
-        ['ollama', 'run', MODEL],
-        input=prompt.encode('utf-8'),
-        capture_output=True
-    )
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr.decode('utf-8'))
-    resposta = result.stdout.decode('utf-8').strip()
-    return limpar_resposta(resposta)
+    headers = {
+            "Content-Type": "application/json"
+        }
+    payload = {
+        "model": MODEL,
+        "messages": [{"role": "system", "content": PROMPT_INICIAL}, {"role": "user", "content": texto}],
+        "temperature": 0.7,
+        "max_tokens": 1500
+    }
+
+    response = requests.post(API_URL, json=payload, headers=headers)
+
+    if response.status_code != 200:
+        raise RuntimeError(f"Erro ao chamar a API do LMStudio: {response.text}")
+    
+    resposta = response.json()
+    texto_resposta = resposta['choices'][0]['message']['content'].strip()
+    return limpar_resposta(texto_resposta)
 
 def process_file(filename):
     caminho_entrada = os.path.join(RAW_DIR, filename)

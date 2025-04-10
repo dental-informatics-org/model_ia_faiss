@@ -32,17 +32,17 @@ def process_pdf_task(files: List[Dict]) -> dict:
             content_type = file["content_type"]
             file_hash = get_file_hash_from_path(str(file_path))
 
-            # save = save_in_db(file_path, file_name_unique, original_name, content_type, file_hash)
-            # file_data = save.get("data")
+            save = save_in_db(file_path, file_name_unique, original_name, content_type, file_hash)
+            file_data = save.get("data")
 
-            # if save["status"] == "skipped":
-            #     if not file_data or file_data.is_indexed:
-            #         reason = save.get("reason", "Arquivo já existente.")
-            #         print(f"{original_name}: {reason}")
-            #         errors.append(f"{original_name}: {reason}")
-            #         continue
-            #     else:
-            #         print(f"{original_name}: Arquivo já existe, mas será indexado.")
+            if save["status"] == "skipped":
+                if not file_data or file_data.is_indexed:
+                    reason = save.get("reason", "Arquivo já existente.")
+                    print(f"{original_name}: {reason}")
+                    errors.append(f"{original_name}: {reason}")
+                    continue
+                else:
+                    print(f"{original_name}: Arquivo já existe, mas será indexado.")
 
             text = extrair_texto_pdf(str(file_path))
             texto_limpo = limpar_texto(text)
@@ -54,7 +54,7 @@ def process_pdf_task(files: List[Dict]) -> dict:
             with open(local_file_json, "w", encoding="utf-8") as f:
                 json.dump(linhas, f, ensure_ascii=False, indent=4)
 
-            # indexar_textos(linhas)
+            indexar_textos(linhas)
             redis_conn.set("recarregar_indice", "true")
             mark_as_indexed(file_hash)
 

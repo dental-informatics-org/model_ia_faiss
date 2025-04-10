@@ -33,7 +33,7 @@ def limpar_texto(texto, converter_minusculas=True):
     texto = re.sub(r'[^a-zA-Z0-9.,\n ]', '', texto)
 
     # Substituir quebras de linha por espaço, apenas se a linha anterior não termina com ponto final
-    texto = re.sub(r'(?<!\.)\n(?=\S)', ' ', texto)
+    #texto = re.sub(r'(?<!\.)\n(?=\S)', ' ', texto)
 
     # Remover linhas com apenas números ou pontuação
     texto = re.sub(r'^\s*(\d+[\s\.,]*)+$', '', texto, flags=re.MULTILINE)
